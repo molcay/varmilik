@@ -1,0 +1,4 @@
+docopt==0.6.2
+pyquery==1.4.0
+requests==2.19.1
+tabulate==0.8.2
