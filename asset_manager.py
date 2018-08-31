@@ -11,10 +11,10 @@ class Asset:
         self.amount = float(amount)
         self.price = float(price)
         self.unit_price = float(unit_price)
-    
+
     def __repr__(self):
         return f"{self.name} => A: {self.amount}, P: {self.price}, UP: {self.unit_price}"
-    
+
     def __add__(self, c):
         return Asset(self.name, self.amount + c.amount, self.price + c.price, (self.unit_price + c.unit_price) / 2)
 
@@ -29,7 +29,7 @@ class AssetManager:
         self.file = arg.file
         self.data = self.asset_from_transactions()
         self.checker = CurrencyChecker(list(self.data.keys()))
-        self.total = { 'currency_list': [] }
+        self.total = { 'currency_list': [], 'amount': [] }
         self.total.update({f: [] for f in self.__FIELD_LIST_FOR_TOTAL })
 
     def asset_from_transactions(self) -> Dict[str, any]:
@@ -46,45 +46,31 @@ class AssetManager:
 
             res = reduce(lambda x1, x2: x1 + x2, asset)
             data[asset_name] = res
-        
-        return data
-    
-    def calculate_total(self):
-        ttl = { k: round(sum(self.total[k]), 2) for k in self.__FIELD_LIST_FOR_TOTAL }
 
-        # print("""TOTAL:
-        #     Paid: {prices}  TL
-        #     Have: {now}  TL
-        #     Profit: {profits}  TL""".format(**ttl))
-        # print(self.__MAIN_SEPARATOR)
-        return ttl
+        return data
+
+    def calculate_total(self):
+        return { k: round(sum(self.total[k]), 2) for k in self.__FIELD_LIST_FOR_TOTAL }
 
     def run(self) -> None:
-        currencies = self.checker.get()        
+        currencies = self.checker.get()
         self.total['currency_list'] = list([f"{ck} ({cv.price})" for ck, cv in currencies.items()]) + ["TOTAL"]
 
         for k, v in currencies.items():
             my_asset = self.data[k]
             now_asset_in_try, price, profit = (round(p, 2) for p in [
-                    my_asset.amount * v.price, 
-                    my_asset.price, 
+                    my_asset.amount * v.price,
+                    my_asset.price,
                     (my_asset.amount * v.price) - my_asset.price
                 ])
-            
-            # print(self.__MAIN_SEPARATOR)
-            # print(f"""{v}
-            # {self.__SUB_SEPARATOR}
-            # You Paid: {price} TL
-            # You Have: {now_asset_in_try} TL
-            # Your Profit: {profit} TL
-            # {self.__SUB_SEPARATOR}""")
+
+            self.total['amount'].append(my_asset.amount)
             self.total['prices'].append(price)
             self.total['now'].append(now_asset_in_try)
             self.total['profits'].append(profit)
-        
+
         ttl = self.calculate_total()
         for t, k in ttl.items():
             self.total[t].append(k)
 
-        print(tabulate(self.total, ["Paid", "Have", "Profit"], tablefmt="fancy_grid"))
-        
+        print(tabulate(self.total, ["Amount", "Paid", "Have", "Profit"], tablefmt="fancy_grid"))
